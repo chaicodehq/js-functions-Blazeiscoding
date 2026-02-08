@@ -40,13 +40,93 @@
  *   // => { totalCustomers: 3, totalRevenue: 7200, mealBreakdown: { veg: 2, nonveg: 1 } }
  */
 export function createTiffinPlan({ name, mealType = "veg", days = 30 } = {}) {
-  // Your code here
+  const rates = {
+    veg: 80,
+    nonveg: 120,
+    jain: 90,
+  };
+
+  if (typeof name !== "string" || name.trim() === "") {
+    return null;
+  }
+
+  if (!(mealType in rates)) {
+    return null;
+  }
+
+  if (typeof days !== "number" || Number.isNaN(days) || days <= 0) {
+    return null;
+  }
+
+  const dailyRate = rates[mealType];
+  const totalCost = dailyRate * days;
+
+  return {
+    name,
+    mealType,
+    days,
+    dailyRate,
+    totalCost,
+  };
 }
 
 export function combinePlans(...plans) {
-  // Your code here
+  if (plans.length === 0) {
+    return null;
+  }
+
+  const mealBreakdown = {};
+  let totalRevenue = 0;
+
+  for (const plan of plans) {
+    if (!plan || typeof plan !== "object") {
+      continue;
+    }
+
+    totalRevenue += typeof plan.totalCost === "number" ? plan.totalCost : 0;
+
+    if (typeof plan.mealType === "string") {
+      mealBreakdown[plan.mealType] = (mealBreakdown[plan.mealType] || 0) + 1;
+    }
+  }
+
+  return {
+    totalCustomers: plans.length,
+    totalRevenue,
+    mealBreakdown,
+  };
 }
 
 export function applyAddons(plan, ...addons) {
-  // Your code here
+  if (!plan || typeof plan !== "object") {
+    return null;
+  }
+
+  let addonTotal = 0;
+  const addonNames = [];
+
+  for (const addon of addons) {
+    if (!addon || typeof addon !== "object") {
+      continue;
+    }
+
+    if (typeof addon.price === "number" && !Number.isNaN(addon.price)) {
+      addonTotal += addon.price;
+    }
+
+    if (typeof addon.name === "string") {
+      addonNames.push(addon.name);
+    }
+  }
+
+  const dailyRate = (typeof plan.dailyRate === "number" ? plan.dailyRate : 0) + addonTotal;
+  const days = typeof plan.days === "number" ? plan.days : 0;
+  const totalCost = dailyRate * days;
+
+  return {
+    ...plan,
+    dailyRate,
+    totalCost,
+    addonNames,
+  };
 }

@@ -54,21 +54,86 @@
  *   // red and blue objects are UNCHANGED
  */
 export function mixColors(color1, color2) {
-  // Your code here
+  if (!isValidColor(color1) || !isValidColor(color2)) {
+    return null;
+  }
+
+  return {
+    name: `${color1.name}-${color2.name}`,
+    r: Math.round((color1.r + color2.r) / 2),
+    g: Math.round((color1.g + color2.g) / 2),
+    b: Math.round((color1.b + color2.b) / 2),
+  };
 }
 
 export function adjustBrightness(color, factor) {
-  // Your code here
+  if (!isValidColor(color) || typeof factor !== "number" || Number.isNaN(factor)) {
+    return null;
+  }
+
+  return {
+    name: color.name,
+    r: clampRgb(Math.round(color.r * factor)),
+    g: clampRgb(Math.round(color.g * factor)),
+    b: clampRgb(Math.round(color.b * factor)),
+  };
 }
 
 export function addToPalette(palette, color) {
-  // Your code here
+  if (!Array.isArray(palette)) {
+    return [color];
+  }
+
+  if (!isValidColor(color)) {
+    return [...palette];
+  }
+
+  return [...palette, color];
 }
 
 export function removeFromPalette(palette, colorName) {
-  // Your code here
+  if (!Array.isArray(palette)) {
+    return [];
+  }
+
+  return palette.filter((color) => color?.name !== colorName);
 }
 
 export function mergePalettes(palette1, palette2) {
-  // Your code here
+  const first = Array.isArray(palette1) ? palette1 : [];
+  const second = Array.isArray(palette2) ? palette2 : [];
+  const combined = [...first, ...second];
+
+  const seenNames = new Set();
+
+  return combined.filter((color) => {
+    if (!color || typeof color.name !== "string") {
+      return false;
+    }
+
+    if (seenNames.has(color.name)) {
+      return false;
+    }
+
+    seenNames.add(color.name);
+    return true;
+  });
+}
+
+function isValidColor(color) {
+  return (
+    color &&
+    typeof color === "object" &&
+    typeof color.name === "string" &&
+    typeof color.r === "number" &&
+    typeof color.g === "number" &&
+    typeof color.b === "number" &&
+    !Number.isNaN(color.r) &&
+    !Number.isNaN(color.g) &&
+    !Number.isNaN(color.b)
+  );
+}
+
+function clampRgb(value) {
+  return Math.max(0, Math.min(255, value));
 }

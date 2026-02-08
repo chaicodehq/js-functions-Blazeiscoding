@@ -64,17 +64,145 @@
  *   // => "voted!"
  */
 export function createElection(candidates) {
-  // Your code here
+  const candidateList = Array.isArray(candidates) ? [...candidates] : [];
+  const candidateMap = new Map(candidateList.map((candidate) => [candidate.id, candidate]));
+  const registeredVoters = new Map();
+  const votedVoters = new Set();
+  const votes = {};
+
+  const registerVoter = (voter) => {
+    if (
+      !voter ||
+      typeof voter !== "object" ||
+      !voter.id ||
+      !voter.name ||
+      typeof voter.age !== "number" ||
+      Number.isNaN(voter.age) ||
+      voter.age < 18
+    ) {
+      return false;
+    }
+
+    if (registeredVoters.has(voter.id)) {
+      return false;
+    }
+
+    registeredVoters.set(voter.id, voter);
+    return true;
+  };
+
+  const castVote = (voterId, candidateId, onSuccess, onError) => {
+    if (typeof onSuccess !== "function" || typeof onError !== "function") {
+      return null;
+    }
+
+    if (!registeredVoters.has(voterId)) {
+      return onError("Voter not registered");
+    }
+
+    if (!candidateMap.has(candidateId)) {
+      return onError("Candidate not found");
+    }
+
+    if (votedVoters.has(voterId)) {
+      return onError("Voter already voted");
+    }
+
+    votedVoters.add(voterId);
+    votes[candidateId] = (votes[candidateId] || 0) + 1;
+
+    return onSuccess({ voterId, candidateId });
+  };
+
+  const getResults = (sortFn) => {
+    const results = candidateList.map((candidate) => ({
+      id: candidate.id,
+      name: candidate.name,
+      party: candidate.party,
+      votes: votes[candidate.id] || 0,
+    }));
+
+    if (typeof sortFn === "function") {
+      return [...results].sort(sortFn);
+    }
+
+    return [...results].sort((a, b) => b.votes - a.votes);
+  };
+
+  const getWinner = () => {
+    const totalVotes = Object.values(votes).reduce((sum, count) => sum + count, 0);
+    if (totalVotes === 0) {
+      return null;
+    }
+
+    let winningCandidate = null;
+    let maxVotes = -1;
+
+    for (const candidate of candidateList) {
+      const candidateVotes = votes[candidate.id] || 0;
+      if (candidateVotes > maxVotes) {
+        maxVotes = candidateVotes;
+        winningCandidate = candidate;
+      }
+    }
+
+    return winningCandidate ? { ...winningCandidate } : null;
+  };
+
+  return {
+    registerVoter,
+    castVote,
+    getResults,
+    getWinner,
+  };
 }
 
 export function createVoteValidator(rules) {
-  // Your code here
+  const minAge =
+    rules && typeof rules.minAge === "number" && !Number.isNaN(rules.minAge)
+      ? rules.minAge
+      : 18;
+  const requiredFields = Array.isArray(rules?.requiredFields) ? rules.requiredFields : [];
+
+  return function validateVote(voter) {
+    if (!voter || typeof voter !== "object") {
+      return { valid: false, reason: "Invalid voter object" };
+    }
+
+    for (const field of requiredFields) {
+      if (!(field in voter) || voter[field] === null || voter[field] === "") {
+        return { valid: false, reason: `Missing required field: ${field}` };
+      }
+    }
+
+    if (typeof voter.age !== "number" || Number.isNaN(voter.age) || voter.age < minAge) {
+      return { valid: false, reason: `Minimum age is ${minAge}` };
+    }
+
+    return { valid: true, reason: null };
+  };
 }
 
 export function countVotesInRegions(regionTree) {
-  // Your code here
+  if (!regionTree || typeof regionTree !== "object") {
+    return 0;
+  }
+
+  const ownVotes = typeof regionTree.votes === "number" ? regionTree.votes : 0;
+  const subRegions = Array.isArray(regionTree.subRegions) ? regionTree.subRegions : [];
+
+  return subRegions.reduce(
+    (totalVotes, subRegion) => totalVotes + countVotesInRegions(subRegion),
+    ownVotes
+  );
 }
 
 export function tallyPure(currentTally, candidateId) {
-  // Your code here
+  const tally = currentTally && typeof currentTally === "object" ? currentTally : {};
+  const currentCount = typeof tally[candidateId] === "number" ? tally[candidateId] : 0;
+
+  return {
+    ...tally,
+    [candidateId]: currentCount + 1,
+  };
 }
